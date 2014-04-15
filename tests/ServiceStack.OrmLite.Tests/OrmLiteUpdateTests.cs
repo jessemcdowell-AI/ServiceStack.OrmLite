@@ -4,6 +4,7 @@ using System.Data;
 using NUnit.Framework;
 using ServiceStack.Common.Tests.Models;
 using ServiceStack.Text;
+using ServiceStack.OrmLite;
 
 namespace ServiceStack.OrmLite.Tests
 {
@@ -136,5 +137,55 @@ namespace ServiceStack.OrmLite.Tests
             var list = new List<ModelWithIdOnly> { row1, row2 };
             db.UpdateAll(list);
         }
+
+        [Test]
+        public void Can_Update_Into_Table_With_RowVersion()
+        {
+            db.CreateTable<ModelWithRowVersionField>(true);
+
+            var row1 = new ModelWithRowVersionField(1);
+            db.Insert(row1);
+
+            var readRow = db.SingleById<ModelWithRowVersionField>(1);
+
+            readRow.ChangeableField = "ChangedValue";
+            db.Update(readRow);
+        }
+
+        [Test]
+        public void Get_Exception_On_Second_Update_Into_Table_With_RowVersion()
+        {
+            db.CreateTable<ModelWithRowVersionField>(true);
+            
+            var row1 = new ModelWithRowVersionField(1);
+            db.Insert(row1);
+
+            var readRow = db.SingleById<ModelWithRowVersionField>(1);
+
+            readRow.ChangeableField = "ChangedValue";
+            db.Update(readRow);
+
+            readRow.ChangeableField = "ValueChangedWithoutRereading";
+            Assert.Throws<RowModifiedException>(() => db.Update(readRow));
+        }
+
+        [Test]
+        public void Perform_Second_Update_Into_Table_Without_RowVersion()
+        {
+            db.DropAndCreateTable<ModelWithIdAndName>();
+
+            var row1 = new ModelWithIdAndName(1);
+            db.Insert(row1);
+
+            var readRow = db.SingleById<ModelWithIdAndName>(row1.Id);
+
+            readRow.Name = "ChangedName";
+            db.Update(readRow);
+
+            readRow.Name = "NameChangedWithoutRereading";
+            db.Update(readRow);
+        }
+
     }
+
 }

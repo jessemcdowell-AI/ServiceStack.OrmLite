@@ -123,5 +123,20 @@ namespace ServiceStack.OrmLite.Tests
             Assert.That(dbRow, Is.Null);
         }
 
-	}
+        [Test]
+        public void Delete_of_stale_row_fails()
+        {
+            db.CreateTable<ModelWithRowVersionField>(true);
+            var row1 = new ModelWithRowVersionField(1);
+            db.Insert(row1);
+
+            var readRow = db.SingleById<ModelWithRowVersionField>(1);
+
+            readRow.ChangeableField = "ChangedValue";
+            db.Update(readRow);
+
+            Assert.Throws<RowModifiedException>(() => db.Delete(readRow));
+        }
+
+    }
 }
