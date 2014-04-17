@@ -135,7 +135,32 @@ namespace ServiceStack.OrmLite.Tests
             readRow.ChangeableField = "ChangedValue";
             db.Update(readRow);
 
-            Assert.Throws<RowModifiedException>(() => db.Delete(readRow));
+            db.Delete(readRow);
+
+            var dbRow = db.SingleById<ModelWithRowVersionField>(readRow.Id);
+
+            Assert.That(dbRow, Is.Not.Null);
+        }
+
+        [Test]
+        public void Delete_of_reread_row_succeeds()
+        {
+            db.CreateTable<ModelWithRowVersionField>(true);
+            var row1 = new ModelWithRowVersionField(1);
+            db.Insert(row1);
+
+            var readRow = db.SingleById<ModelWithRowVersionField>(1);
+
+            readRow.ChangeableField = "ChangedValue";
+            db.Update(readRow);
+
+            var rereadRow = db.SingleById<ModelWithRowVersionField>(readRow.Id);
+
+            db.Delete(rereadRow);
+
+            var dbRow = db.SingleById<ModelWithRowVersionField>(readRow.Id);
+
+            Assert.That(dbRow, Is.Null);
         }
 
     }
